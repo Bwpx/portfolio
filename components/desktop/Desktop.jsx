@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -9,27 +10,63 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import Window, { isSheet } from "./Window";
+import Window, { DOCK_SPACE, MENU_H, isSheet } from "./Window";
 import Terminal from "./Terminal";
-import { AboutApp, ContactApp, ProjectsApp, SkillsApp } from "./apps";
+import BrowserApp from "./Browser";
+import CalculatorApp from "./Calculator";
+import ContextMenu from "./ContextMenu";
+import NotesApp from "./Notes";
+import SettingsApp from "./Settings";
+import StartupScreen from "./StartupScreen";
+import { AboutApp, ContactApp, ProjectsApp, ResumeApp, SkillsApp } from "./apps";
+import { APP_IDS, APP_META, WALLPAPERS } from "./catalog";
 import { Icon } from "./icons";
 import { PROFILE } from "./profile";
-import { THEME_SCRIPT, ensureTheme, setTheme, useTheme } from "./theme";
+import {
+  SETTINGS_SCRIPT,
+  applyWallpaper,
+  getSettings,
+  moveIcon,
+  resetIcons,
+  resetSettings,
+  setPlacement,
+  updateSettings,
+  useSettings,
+} from "./settings";
+import { THEME_SCRIPT, ensureTheme, setAppearance, setTheme, useTheme } from "./theme";
 import s from "./desktop.module.css";
 
-// w/h: preferred size; x/y: preferred position as a fraction of the screen.
-const APPS = {
-  about: { title: "About", tile: "linear-gradient(135deg,#f59e0b,#ea580c)", w: 560, h: 600, x: 0.1, y: 0.06, Component: AboutApp },
-  projects: { title: "Projects", tile: "linear-gradient(135deg,#38bdf8,#4f46e5)", w: 640, h: 540, x: 0.4, y: 0.1, Component: ProjectsApp },
-  skills: { title: "Skills", tile: "linear-gradient(135deg,#34d399,#0d9488)", w: 480, h: 400, x: 0.18, y: 0.3, Component: SkillsApp },
-  contact: { title: "Contact", tile: "linear-gradient(135deg,#fb7185,#db2777)", w: 460, h: 420, x: 0.56, y: 0.26, Component: ContactApp },
-  terminal: { title: "Terminal", tile: "linear-gradient(135deg,#3f3f46,#18181b)", w: 620, h: 400, x: 0.32, y: 0.38, Component: Terminal },
+const COMPONENTS = {
+  about: AboutApp,
+  projects: ProjectsApp,
+  resume: ResumeApp,
+  skills: SkillsApp,
+  contact: ContactApp,
+  browser: BrowserApp,
+  terminal: Terminal,
+  notes: NotesApp,
+  calculator: CalculatorApp,
+  settings: SettingsApp,
 };
-const DOCK_ORDER = ["about", "projects", "skills", "contact", "terminal"];
+const APPS = Object.fromEntries(
+  Object.entries(APP_META).map(([id, meta]) => [id, { ...meta, Component: COMPONENTS[id] }])
+);
+
+// Desktop icon grid: column-major from the top-left corner.
+const CELL_W = 92;
+const CELL_H = 100;
+const GRID_LEFT = 12;
+const GRID_TOP = MENU_H + 14;
+const DRAG_THRESHOLD = 5;
+const PLACEHOLDER = "\0placeholder";
 
 const cx = (...names) => names.filter(Boolean).join(" ");
 const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const frontmost = (list) => list.reduce((top, w) => (!top || w.z > top.z ? w : top), null);
+const slotOf = (index, rows) => ({
+  left: GRID_LEFT + Math.floor(index / rows) * CELL_W,
+  top: GRID_TOP + (index % rows) * CELL_H,
+});
 
 // Menu bar clock, kept outside React state so it never mismatches on hydration.
 let clockFormat;
@@ -48,17 +85,38 @@ function subscribeClock(onChange) {
   return () => clearInterval(timer);
 }
 
+// How many icon rows fit between the menu bar and the dock.
+function subscribeResize(onChange) {
+  window.addEventListener("resize", onChange);
+  return () => window.removeEventListener("resize", onChange);
+}
+const readRows = () =>
+  Math.max(1, Math.floor((window.innerHeight - GRID_TOP - DOCK_SPACE - 8) / CELL_H));
+
 export default function Desktop() {
   // Each window: { id, z, minimized, zoomed, phase: "open" | "closing" | "minimizing" }
   const [wins, setWins] = useState([]);
   const [focusRequest, setFocusRequest] = useState({ id: null, n: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState({ name: null, n: 0 });
+  const [selected, setSelected] = useState(null);
+  const [ctx, setCtx] = useState(null); // { x, y, label, items }
+  const [drag, setDrag] = useState(null); // { id, from, x, y, target: { zone, index } }
+  const router = useRouter();
+  const settings = useSettings();
   const theme = useTheme();
   const clock = useSyncExternalStore(subscribeClock, readClock, () => "");
+  const rows = useSyncExternalStore(subscribeResize, readRows, () => 6);
   const zTop = useRef(10);
   const dockRefs = useRef({});
+  const dockRef = useRef(null);
   const sysBtnRef = useRef(null);
   const menuRef = useRef(null);
+  const ghostRef = useRef(null);
+  const gesture = useRef(null);
+  const suppressClick = useRef(false);
+  const ctxReturnFocus = useRef(null);
+  const lastPointerTouch = useRef(false);
 
   const visible = wins.filter((w) => !w.minimized && w.phase === "open");
   const front = frontmost(visible);
@@ -70,7 +128,16 @@ export default function Desktop() {
     setWins((ws) => ws.map((w) => (w.id === id ? { ...w, z } : w)));
   }
 
-  function openApp(id) {
+  function openApp(id, options) {
+    const app = APPS[id];
+    if (!app) return;
+    if (app.href) {
+      router.push(app.href);
+      return;
+    }
+    if (id === "settings" && options?.section) {
+      setSettingsSection((sec) => ({ name: options.section, n: sec.n + 1 }));
+    }
     const z = ++zTop.current;
     setWins((ws) => {
       const existing = ws.find((w) => w.id === id);
@@ -85,7 +152,7 @@ export default function Desktop() {
   function focusAfterLeaving(id) {
     const next = frontmost(visible.filter((w) => w.id !== id));
     if (next) requestFocus(next.id);
-    else dockRefs.current[id]?.focus();
+    else (dockRefs.current[id] ?? sysBtnRef.current)?.focus();
   }
 
   function closeWin(id) {
@@ -125,6 +192,12 @@ export default function Desktop() {
     sysBtnRef.current?.focus();
   }
 
+  function resetDesktop() {
+    resetSettings();
+    setAppearance("auto");
+    closeAll();
+  }
+
   const handleClosed = useCallback((id) => {
     setWins((ws) => ws.filter((w) => w.id !== id));
   }, []);
@@ -138,6 +211,17 @@ export default function Desktop() {
   }, []);
 
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
+
+  function nextWallpaper() {
+    const i = WALLPAPERS.findIndex((w) => w.id === getSettings().wallpaper);
+    updateSettings({ wallpaper: WALLPAPERS[(i + 1) % WALLPAPERS.length].id });
+  }
+
+  function sortIcons() {
+    updateSettings((st) => ({
+      desktop: [...st.desktop].sort((a, b) => APP_META[a].title.localeCompare(APP_META[b].title)),
+    }));
+  }
 
   // ── System menu ──────────────────────────────────────────────────────────
   const menuItems = () => Array.from(menuRef.current.querySelectorAll('[role="menuitem"]'));
@@ -166,6 +250,151 @@ export default function Desktop() {
     else if (e.key === "Tab") setMenuOpen(false);
   }
 
+  // ── Context menus ────────────────────────────────────────────────────────
+  function showContextMenu(e, label, items) {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(false);
+    let { clientX: x, clientY: y } = e;
+    // Keyboard-invoked menus (Shift+F10, menu key) have no pointer position.
+    if (!x && !y) {
+      const box = e.currentTarget.getBoundingClientRect();
+      x = box.left + box.width / 2;
+      y = box.top + box.height / 2;
+    }
+    ctxReturnFocus.current = document.activeElement;
+    setCtx({ x, y, label, items });
+  }
+
+  const closeContextMenu = useCallback((restoreFocus) => {
+    setCtx(null);
+    if (restoreFocus) ctxReturnFocus.current?.focus?.();
+  }, []);
+
+  function iconMenu(e, id) {
+    const st = getSettings();
+    const app = APP_META[id];
+    const onDesktop = st.desktop.includes(id);
+    const inDock = st.dock.includes(id);
+    const running = wins.some((w) => w.id === id && w.phase !== "closing");
+    showContextMenu(e, `${app.title} options`, [
+      { label: app.href ? "Open Classic View" : "Open", action: () => openApp(id) },
+      ...(running ? [{ label: "Close Window", action: () => closeWin(id) }] : []),
+      "sep",
+      {
+        label: onDesktop ? "Remove from Desktop" : "Add to Desktop",
+        action: () => setPlacement(id, "desktop", !onDesktop),
+      },
+      {
+        label: inDock ? "Remove from Dock" : "Keep in Dock",
+        action: () => setPlacement(id, "dock", !inDock),
+      },
+      "sep",
+      { label: "Desktop & Dock Settings…", action: () => openApp("settings", { section: "icons" }) },
+    ]);
+  }
+
+  function desktopMenu(e) {
+    setSelected(null);
+    showContextMenu(e, "Desktop options", [
+      { label: "Change Wallpaper…", action: () => openApp("settings", { section: "wallpaper" }) },
+      { label: "Next Wallpaper", action: nextWallpaper },
+      "sep",
+      { label: "Sort Icons by Name", action: sortIcons, disabled: getSettings().desktop.length < 2 },
+      { label: "Reset Icons & Dock", action: resetIcons },
+      "sep",
+      { label: "Appearance…", action: () => openApp("settings", { section: "appearance" }) },
+      { label: "Settings…", action: () => openApp("settings") },
+    ]);
+  }
+
+  function dockMenu(e) {
+    showContextMenu(e, "Dock options", [
+      { label: "Dock Settings…", action: () => openApp("settings", { section: "icons" }) },
+      { label: "Reset Icons & Dock", action: resetIcons },
+    ]);
+  }
+
+  // ── Dragging icons ───────────────────────────────────────────────────────
+  // Icons can be dragged within the desktop or dock to reorder them, and
+  // between the two to move them. The lists re-render with a gap where the
+  // icon would land; the icon itself follows the pointer as a "ghost".
+  function dropTarget(x, y, id) {
+    const dock = dockRef.current.getBoundingClientRect();
+    if (y >= dock.top - 24 && x >= dock.left - 24 && x <= dock.right + 24) {
+      // The dock stays centred while the gap moves around, so measure slots
+      // from its centre: with n icons plus the gap, slot i is centred at
+      // centre + (i - n/2) * slot.
+      const n = getSettings().dock.filter((x) => x !== id).length;
+      const first = dockRef.current.querySelector("[data-dock-id]");
+      const slot = (first?.offsetWidth ?? 52) + parseFloat(getComputedStyle(dockRef.current).columnGap || 0);
+      const centre = dock.left + dock.width / 2;
+      const index = Math.max(0, Math.min(n, Math.round((x - centre) / slot + n / 2)));
+      return { zone: "dock", index };
+    }
+    const count = getSettings().desktop.filter((x) => x !== id).length;
+    const col = Math.max(0, Math.floor((x - GRID_LEFT) / CELL_W));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor((y - GRID_TOP) / CELL_H)));
+    return { zone: "desktop", index: Math.min(count, col * rows + row) };
+  }
+
+  function placeGhost(x, y) {
+    if (ghostRef.current) ghostRef.current.style.transform = `translate(${x - 26}px, ${y - 26}px)`;
+  }
+
+  const onDragMove = useEffectEvent((e) => {
+    const g = gesture.current;
+    if (!g || e.pointerId !== g.pointerId) return;
+    if (!g.active) {
+      if (Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < DRAG_THRESHOLD) return;
+      g.active = true;
+      setCtx(null);
+    }
+    const target = dropTarget(e.clientX, e.clientY, g.id);
+    placeGhost(e.clientX, e.clientY);
+    if (!g.target || g.target.zone !== target.zone || g.target.index !== target.index) {
+      g.target = target;
+      setDrag({ id: g.id, from: g.from, x: e.clientX, y: e.clientY, target });
+    }
+  });
+
+  const onDragEnd = useEffectEvent((e) => {
+    const g = gesture.current;
+    if (!g || e.pointerId !== g.pointerId) return;
+    gesture.current = null;
+    if (g.active && e.type === "pointerup") {
+      moveIcon(g.id, g.from, g.target.zone, g.target.index);
+      // The click that follows a drag shouldn't open the app.
+      suppressClick.current = true;
+      setTimeout(() => (suppressClick.current = false), 0);
+    }
+    setDrag(null);
+  });
+
+  function startDrag(e, id, from) {
+    if (e.button !== 0 || gesture.current) return;
+    gesture.current = { id, from, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, active: false, target: null };
+  }
+
+  // Preview of both lists while dragging.
+  let desktopList = settings.desktop;
+  let dockList = settings.dock;
+  if (drag) {
+    const without = (list) => list.filter((x) => x !== drag.id);
+    if (drag.from === "desktop") desktopList = without(desktopList);
+    else dockList = without(dockList);
+    const target = without(drag.target.zone === "desktop" ? desktopList : dockList);
+    target.splice(drag.target.index, 0, PLACEHOLDER);
+    if (drag.target.zone === "desktop") desktopList = target;
+    else dockList = target;
+  }
+
+  function handleIconClick(e, id) {
+    if (suppressClick.current) return;
+    // Keyboard (Enter/Space) and touch open right away; mouse needs a double-click.
+    if (e.detail === 0 || lastPointerTouch.current) openApp(id);
+  }
+
   // ── Global listeners ─────────────────────────────────────────────────────
   // Escape closes the menu first, then the front window.
   const onKeyDown = useEffectEvent((e) => {
@@ -189,30 +418,52 @@ export default function Desktop() {
   const boot = useEffectEvent(() => {
     // Deep links like /desktop/#projects open that window on load.
     const fromHash = window.location.hash.slice(1).toLowerCase();
-    if (APPS[fromHash]) openApp(fromHash);
+    if (APPS[fromHash] && !APPS[fromHash].href) openApp(fromHash);
     else if (!isSheet()) openApp("about");
   });
 
   useEffect(() => {
     const keyHandler = (e) => onKeyDown(e);
     const pointerHandler = (e) => onPointerDown(e);
+    const moveHandler = (e) => onDragMove(e);
+    const endHandler = (e) => onDragEnd(e);
     document.addEventListener("keydown", keyHandler);
     document.addEventListener("pointerdown", pointerHandler);
+    document.addEventListener("pointermove", moveHandler);
+    document.addEventListener("pointerup", endHandler);
+    document.addEventListener("pointercancel", endHandler);
     return () => {
       document.removeEventListener("keydown", keyHandler);
       document.removeEventListener("pointerdown", pointerHandler);
+      document.removeEventListener("pointermove", moveHandler);
+      document.removeEventListener("pointerup", endHandler);
+      document.removeEventListener("pointercancel", endHandler);
     };
   }, []);
 
   useEffect(() => {
     ensureTheme();
+    applyWallpaper(getSettings().wallpaper);
     const frame = requestAnimationFrame(() => boot());
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  function renderIcon(id) {
+    return (
+      <span className={s.appIcon} style={{ "--tile": APPS[id].tile }}>
+        <Icon name={id} />
+      </span>
+    );
+  }
+
   return (
-    <div className={s.desk} data-desk-root="" suppressHydrationWarning>
+    <div
+      className={cx(s.desk, drag && s.isDraggingIcon)}
+      data-desk-root=""
+      suppressHydrationWarning
+    >
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: SETTINGS_SCRIPT }} />
       <div className={s.wallpaper} aria-hidden="true" />
 
       <header className={s.menubar}>
@@ -242,6 +493,14 @@ export default function Desktop() {
         <button
           type="button"
           className={s.menubarBtn}
+          aria-label="Settings"
+          onClick={() => openApp("settings")}
+        >
+          <Icon name="settings" />
+        </button>
+        <button
+          type="button"
+          className={s.menubarBtn}
           aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
           onClick={toggleTheme}
         >
@@ -262,6 +521,17 @@ export default function Desktop() {
         <button type="button" role="menuitem" onClick={() => runMenuAction(() => openApp("about"))}>
           About {PROFILE.name.split(" ")[0]}
         </button>
+        <button type="button" role="menuitem" onClick={() => runMenuAction(() => openApp("settings"))}>
+          Settings…
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => runMenuAction(() => openApp("settings", { section: "wallpaper" }))}
+        >
+          Change Wallpaper…
+        </button>
+        <hr role="separator" />
         <button type="button" role="menuitem" onClick={() => runMenuAction(() => openApp("terminal"))}>
           Open Terminal
         </button>
@@ -288,6 +558,46 @@ export default function Desktop() {
 
       <main aria-label="Desktop">
         <h1 className={s.srOnly}>{PROFILE.name} — interactive desktop portfolio</h1>
+
+        <div
+          className={s.surface}
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) setSelected(null);
+          }}
+          onContextMenu={desktopMenu}
+        >
+          <ul className={s.iconGrid} aria-label="Desktop icons">
+            {desktopList.map((id, i) =>
+              id === PLACEHOLDER ? (
+                <li key={PLACEHOLDER} className={s.iconSlot} style={slotOf(i, rows)} aria-hidden="true" />
+              ) : (
+                <li key={id} className={s.iconCell} style={slotOf(i, rows)}>
+                  <button
+                    type="button"
+                    className={cx(s.deskIcon, selected === id && s.isSelected)}
+                    aria-label={`${APPS[id].title}${APPS[id].href ? " (opens the classic site)" : ""}`}
+                    onPointerDown={(e) => {
+                      lastPointerTouch.current = e.pointerType === "touch";
+                      setSelected(id);
+                      startDrag(e, id, "desktop");
+                    }}
+                    onClick={(e) => handleIconClick(e, id)}
+                    onDoubleClick={() => !suppressClick.current && openApp(id)}
+                    onFocus={() => setSelected(id)}
+                    onContextMenu={(e) => {
+                      setSelected(id);
+                      iconMenu(e, id);
+                    }}
+                  >
+                    {renderIcon(id)}
+                    <span className={s.deskLabel}>{APPS[id].title}</span>
+                  </button>
+                </li>
+              )
+            )}
+          </ul>
+        </div>
+
         {wins.map((w) => {
           const app = APPS[w.id];
           const App = app.Component;
@@ -308,11 +618,14 @@ export default function Desktop() {
               {w.id === "terminal" ? (
                 <Terminal
                   profile={PROFILE}
+                  openable={APP_IDS}
                   openApp={openApp}
                   theme={theme}
                   setTheme={setTheme}
                   onExit={() => closeWin("terminal")}
                 />
+              ) : w.id === "settings" ? (
+                <SettingsApp section={settingsSection} onResetDesktop={resetDesktop} />
               ) : (
                 <App profile={PROFILE} openApp={openApp} />
               )}
@@ -321,8 +634,14 @@ export default function Desktop() {
         })}
       </main>
 
-      <nav className={s.dock} aria-label="Dock">
-        {DOCK_ORDER.map((id) => {
+      <nav ref={dockRef} className={s.dock} aria-label="Dock" onContextMenu={dockMenu}>
+        {dockList.length === 0 && (
+          <span className={s.dockEmpty}>Drag apps here</span>
+        )}
+        {dockList.map((id) => {
+          if (id === PLACEHOLDER) {
+            return <span key={PLACEHOLDER} className={s.dockSlot} aria-hidden="true" />;
+          }
           const app = APPS[id];
           const w = wins.find((win) => win.id === id && win.phase !== "closing");
           const status = w ? (w.minimized ? " (minimized)" : " (open)") : "";
@@ -334,34 +653,41 @@ export default function Desktop() {
               }}
               type="button"
               className={cx(s.dockItem, w && s.isRunning)}
-              data-app={id}
+              data-dock-id={id}
               aria-label={app.title + status}
-              onClick={() => openApp(id)}
+              onPointerDown={(e) => startDrag(e, id, "dock")}
+              onClick={() => !suppressClick.current && openApp(id)}
+              onContextMenu={(e) => iconMenu(e, id)}
             >
-              <span className={s.appIcon} style={{ "--tile": app.tile }}>
-                <Icon name={id} />
-              </span>
+              {renderIcon(id)}
               <span className={s.dockLabel} aria-hidden="true">
                 {app.title}
               </span>
             </button>
           );
         })}
-        <span className={s.dockSep} aria-hidden="true" />
-        <Link
-          className={s.dockItem}
-          href={PROFILE.homepage}
-          prefetch={false}
-          aria-label="Main site"
-        >
-          <span className={s.appIcon} style={{ "--tile": "linear-gradient(135deg,#71717a,#3f3f46)" }}>
-            <Icon name="home" />
-          </span>
-          <span className={s.dockLabel} aria-hidden="true">
-            Main site
-          </span>
-        </Link>
       </nav>
+
+      {drag && (
+        <div
+          ref={ghostRef}
+          className={s.dragGhost}
+          style={{ transform: `translate(${drag.x - 26}px, ${drag.y - 26}px)` }}
+          aria-hidden="true"
+        >
+          {renderIcon(drag.id)}
+        </div>
+      )}
+
+      {ctx && (
+        <ContextMenu x={ctx.x} y={ctx.y} label={ctx.label} items={ctx.items} onClose={closeContextMenu} />
+      )}
+
+      <span className={s.srOnly} aria-live="polite">
+        {drag ? `Moving ${APPS[drag.id].title} to the ${drag.target.zone}` : ""}
+      </span>
+
+      <StartupScreen name={PROFILE.name} />
     </div>
   );
 }

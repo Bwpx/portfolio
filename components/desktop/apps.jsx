@@ -222,3 +222,73 @@ export function ContactApp({ profile }) {
     </>
   );
 }
+
+// A one-page resume built from the same portfolio data; printable on its own.
+export function ResumeApp({ profile }) {
+  const fact = (label) => profile.facts.find((f) => f.label === label)?.value;
+  const location = fact("Location");
+  return (
+    <>
+      <div className={s.resumeBar}>
+        <button type="button" className={`${s.btn} ${s.btnPrimary}`} onClick={() => window.print()}>
+          <Icon name="download" />
+          Print / Save as PDF
+        </button>
+      </div>
+      <article className={s.resume} data-print-root="">
+        <header className={s.resumeHead}>
+          <h3>{profile.name}</h3>
+          <p className={s.resumeRole}>
+            {profile.role} · {profile.goal}
+          </p>
+          <p className={s.resumeContact}>
+            {location && <span>{location}</span>}
+            <a href={`mailto:${profile.email}`}>{profile.email}</a>
+            <a href={profile.github.url} target="_blank" rel="noopener noreferrer">
+              {profile.github.url.replace("https://", "")}
+            </a>
+            <a href={profile.linkedin.url} target="_blank" rel="noopener noreferrer">
+              {profile.linkedin.url.replace("https://", "")}
+            </a>
+          </p>
+        </header>
+
+        <section>
+          <h4>Summary</h4>
+          <p>{profile.bio[0]}</p>
+        </section>
+
+        <section>
+          <h4>Education</h4>
+          <div className={s.resumeItem}>
+            <strong>{fact("Education")}</strong>
+            {fact("Concentration") && <span>Concentration: {fact("Concentration")}</span>}
+          </div>
+        </section>
+
+        <section>
+          <h4>Projects</h4>
+          {profile.projects.map((project) => (
+            <div key={project.title} className={s.resumeItem}>
+              <strong>{project.title}</strong>
+              <span className={s.resumeTech}>{project.tech.join(" · ")}</span>
+              <p>{project.description}</p>
+            </div>
+          ))}
+        </section>
+
+        <section>
+          <h4>Skills</h4>
+          <dl className={s.resumeSkills}>
+            {Object.entries(profile.skills).map(([category, items]) => (
+              <div key={category}>
+                <dt>{category}</dt>
+                <dd>{items.join(", ")}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </article>
+    </>
+  );
+}

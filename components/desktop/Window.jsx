@@ -184,7 +184,7 @@ export default function Window({
         </div>
         <h2 id={titleId}>{app.title}</h2>
       </div>
-      <div className={cx(s.content, win.id === "terminal" && s.terminalContent)}>{children}</div>
+      <div className={cx(s.content, app.flush && s.flushContent, win.id === "terminal" && s.terminalContent)}>{children}</div>
       <div
         className={s.resize}
         aria-hidden="true"

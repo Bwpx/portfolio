@@ -10,8 +10,6 @@ const FILES = {
   "contact.txt": "contact",
 };
 
-const OPENABLE = ["about", "projects", "skills", "contact"];
-
 const span = (cls, text) => <span className={s[cls]}>{text}</span>;
 const extLink = (href, text) => (
   <a href={href} target="_blank" rel="noopener noreferrer">
@@ -19,7 +17,7 @@ const extLink = (href, text) => (
   </a>
 );
 
-export default function Terminal({ profile, openApp, theme, setTheme, onExit }) {
+export default function Terminal({ profile, openable, openApp, theme, setTheme, onExit }) {
   const prompt = `${profile.handle}@portfolio ~ $`;
   const inputId = useId();
   const inputRef = useRef(null);
@@ -102,14 +100,14 @@ export default function Terminal({ profile, openApp, theme, setTheme, onExit }) 
         },
       },
       open: {
-        desc: "open <about|projects|skills|contact>",
+        desc: "open <app>  (e.g. open notes)",
         run(args) {
           const id = (args[0] || "").toLowerCase().replace(/\/$/, "");
-          if (OPENABLE.includes(id)) {
+          if (openable.includes(id)) {
             openApp(id);
             print(span("dim", `Opening ${id}…`));
           } else {
-            print(span("err", `open: unknown app '${args[0] || ""}'.`), ` Try: ${OPENABLE.join(", ")}`);
+            print(span("err", `open: unknown app '${args[0] || ""}'.`), ` Try: ${openable.join(", ")}`);
           }
         },
       },
