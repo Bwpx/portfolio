@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, Monitor, X } from "lucide-react";
 import { siteData } from "@/data/portfolio";
 
 export default function Navbar() {
@@ -47,6 +47,13 @@ export default function Navbar() {
               {link}
             </a>
           ))}
+          <a
+            href="/desktop/"
+            className="inline-flex items-center gap-1.5 text-sm text-[#a1a1aa] hover:text-amber-400 transition-colors duration-200"
+          >
+            <Monitor size={14} aria-hidden="true" />
+            Desktop
+          </a>
         </div>
 
         {/* Mobile toggle */}
@@ -76,6 +83,14 @@ export default function Navbar() {
               {link}
             </a>
           ))}
+          <a
+            href="/desktop/"
+            className="inline-flex items-center gap-1.5 text-sm text-[#a1a1aa] hover:text-amber-400 transition-colors"
+            onClick={closeMenu}
+          >
+            <Monitor size={14} aria-hidden="true" />
+            Desktop
+          </a>
         </div>
       </div>
     </nav>
