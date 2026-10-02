@@ -58,6 +58,7 @@ const CELL_H = 100;
 const GRID_LEFT = 12;
 const GRID_TOP = MENU_H + 14;
 const DRAG_THRESHOLD = 5;
+const TAGLINE = "Software Engineer Student @ UTSA";
 const PLACEHOLDER = "\0placeholder";
 
 const cx = (...names) => names.filter(Boolean).join(" ");
@@ -465,6 +466,14 @@ export default function Desktop() {
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       <script dangerouslySetInnerHTML={{ __html: SETTINGS_SCRIPT }} />
       <div className={s.wallpaper} aria-hidden="true" />
+      <div className={s.deskTitle} aria-hidden="true">
+        <p className={s.deskName}>
+          {PROFILE.name.split(" ")[0]}
+          <br />
+          {PROFILE.name.split(" ").slice(1).join(" ")}
+        </p>
+        <p className={s.deskTagline}>{TAGLINE}</p>
+      </div>
 
       <header className={s.menubar}>
         <button
