@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,7 +16,7 @@ const DOWNLOAD_URL =
   "https://github.com/bwpx/fpsopti-ai/releases/latest/download/FPSOptiAI.exe";
 const OLLAMA_URL = "https://ollama.com/download";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "FPSOpti AI — Download & Setup",
   description:
     "Local AI-powered PC performance optimizer for Windows. Scans your hardware and generates per-game graphics settings using a local LLM via Ollama.",
@@ -295,7 +294,7 @@ export default function FPSOptiAIPage() {
               a={
                 <>
                   Single-file PyInstaller builds occasionally trigger a
-                  SmartScreen prompt because the .exe isn't code-signed. Click{" "}
+                  SmartScreen prompt because the .exe isn&apos;t code-signed. Click{" "}
                   <span className="font-mono text-xs">More info</span> →{" "}
                   <span className="font-mono text-xs">Run anyway</span> if
                   you trust the source (this repo).
@@ -349,15 +348,7 @@ export default function FPSOptiAIPage() {
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
+function FeatureCard({ icon, title, body }) {
   return (
     <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 hover:border-amber-500/40 transition-colors duration-300">
       <div className="w-9 h-9 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-4">
@@ -369,17 +360,7 @@ function FeatureCard({
   );
 }
 
-function Step({
-  n,
-  title,
-  body,
-  code,
-}: {
-  n: number;
-  title: string;
-  body: React.ReactNode;
-  code?: string;
-}) {
+function Step({ n, title, body, code }) {
   return (
     <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 sm:p-6">
       <div className="flex items-center gap-3 mb-3">
@@ -401,13 +382,7 @@ function Step({
   );
 }
 
-function Troubleshoot({
-  q,
-  a,
-}: {
-  q: string;
-  a: React.ReactNode;
-}) {
+function Troubleshoot({ q, a }) {
   return (
     <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5">
       <p className="text-[#e4e4e7] font-semibold text-sm mb-2">{q}</p>

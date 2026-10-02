@@ -4,15 +4,13 @@ import { GitHubIcon } from "./Icons";
 import { siteData } from "@/data/portfolio";
 import SectionHeading from "./SectionHeading";
 
-type Project = (typeof siteData.projects)[number];
-
 export default function Projects() {
   return (
     <section id="projects" className="py-24 sm:py-28 bg-[#0a0a0a]">
       <div className="max-w-5xl mx-auto px-6">
         <SectionHeading eyebrow="My Work" title="Projects" />
 
-        {/* Grid — add new projects to siteData.projects in data/portfolio.ts */}
+        {/* Grid — add new projects to siteData.projects in data/portfolio.js */}
         <div className="grid gap-5 sm:grid-cols-2">
           {siteData.projects.map((project, i) => (
             <ProjectCard key={i} project={project} />
@@ -23,11 +21,10 @@ export default function Projects() {
   );
 }
 
-function ProjectCard({ project }: { project: Project }) {
-  const p = project as Project & { download?: string; details?: string };
+function ProjectCard({ project }) {
   // Card-wide click target priority: details page > live URL.
-  const cardHref = p.details ?? p.live;
-  const cardIsInternal = !!p.details;
+  const cardHref = project.details ?? project.live;
+  const cardIsInternal = !!project.details;
 
   return (
     <article className="group relative flex flex-col bg-[#18181b] border border-[#27272a] rounded-xl p-6 hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300">
@@ -62,9 +59,9 @@ function ProjectCard({ project }: { project: Project }) {
               <GitHubIcon size={17} />
             </a>
           )}
-          {p.download && (
+          {project.download && (
             <a
-              href={p.download}
+              href={project.download}
               download
               aria-label="Download executable"
               className="text-[#71717a] hover:text-amber-400 transition-colors duration-200"
@@ -103,7 +100,7 @@ function ProjectCard({ project }: { project: Project }) {
             {t}
           </span>
         ))}
-        {p.details && (
+        {project.details && (
           <span className="ml-auto text-xs text-amber-400 font-mono group-hover:translate-x-0.5 transition-transform duration-200">
             Setup guide →
           </span>

@@ -3,7 +3,7 @@
 
 export const siteData = {
   name: "Martin Gonzalez",
-  navLinks: ["About", "Projects", "Skills", "Contact"] as const,
+  navLinks: ["About", "Projects", "Skills", "Contact"],
 
   hero: {
     greeting: "Hello World! I'm",
@@ -65,7 +65,7 @@ export const siteData = {
     Languages: ["Java", "Python", "C", "JavaScript", "SQL"],
     "Frameworks & Libraries": ["React", "Node.js"],
     Tools: ["Git", "GitHub", "VS Code", "Eclipse", "Azure", "Vercel", "MySQL", "Slack"],
-  } as Record<string, string[]>,
+  },
 
   contact: {
     intro:

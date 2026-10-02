@@ -44,15 +44,7 @@ export default function Contact() {
   );
 }
 
-interface ContactRowProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  external?: boolean;
-}
-
-function ContactRow({ href, icon, label, value, external = false }: ContactRowProps) {
+function ContactRow({ href, icon, label, value, external = false }) {
   return (
     <a
       href={href}

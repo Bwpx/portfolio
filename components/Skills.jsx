@@ -7,7 +7,7 @@ export default function Skills() {
       <div className="max-w-5xl mx-auto px-6">
         <SectionHeading eyebrow="Tech Stack" title="Skills" />
 
-        {/* Groups — edit categories and items in data/portfolio.ts */}
+        {/* Groups — edit categories and items in data/portfolio.js */}
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
           {Object.entries(siteData.skills).map(([category, items]) => (
             <SkillGroup key={category} category={category} items={items} />
@@ -18,13 +18,7 @@ export default function Skills() {
   );
 }
 
-function SkillGroup({
-  category,
-  items,
-}: {
-  category: string;
-  items: string[];
-}) {
+function SkillGroup({ category, items }) {
   return (
     <div className="rounded-xl border border-[#27272a] bg-[#18181b] p-6 hover:border-amber-500/30 transition-colors duration-300">
       <h3 className="text-[11px] font-semibold text-amber-400 uppercase tracking-[0.2em] mb-5 font-mono">

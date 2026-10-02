@@ -1,9 +1,4 @@
-interface Props {
-  eyebrow?: string;
-  title: string;
-}
-
-export default function SectionHeading({ eyebrow, title }: Props) {
+export default function SectionHeading({ eyebrow, title }) {
   return (
     <div className="mb-12 sm:mb-14">
       {eyebrow && (

@@ -1,11 +1,6 @@
 "use client";
 
-export default function GlobalError({
-  unstable_retry,
-}: {
-  error: Error & { digest?: string };
-  unstable_retry: () => void;
-}) {
+export default function GlobalError({ unstable_retry }) {
   return (
     <html lang="en">
       <body

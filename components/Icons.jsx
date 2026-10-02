@@ -1,11 +1,6 @@
 // Brand icons not available in lucide-react — defined as inline SVG components.
 
-interface IconProps {
-  size?: number;
-  className?: string;
-}
-
-export function GitHubIcon({ size = 18, className }: IconProps) {
+export function GitHubIcon({ size = 18, className }) {
   return (
     <svg
       width={size}
@@ -20,7 +15,7 @@ export function GitHubIcon({ size = 18, className }: IconProps) {
   );
 }
 
-export function LinkedInIcon({ size = 18, className }: IconProps) {
+export function LinkedInIcon({ size = 18, className }) {
   return (
     <svg
       width={size}
