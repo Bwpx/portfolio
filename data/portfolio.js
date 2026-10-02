@@ -76,7 +76,7 @@ export const siteData = {
       label: "bwpx",
     },
     linkedin: {
-      url: "https://linkedin.com/in/martin-gonzalez",
+      url: "https://www.linkedin.com/in/martin-gonzalez-481942263/",
       label: "Martin Gonzalez",
     },
   },
