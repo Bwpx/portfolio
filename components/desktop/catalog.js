@@ -6,7 +6,7 @@
 // `external` ones open in a new tab. `hint` is read out by screen readers.
 export const APP_META = {
   about: { title: "About Me", tile: "linear-gradient(135deg,#f59e0b,#ea580c)", w: 560, h: 600, x: 0.1, y: 0.06 },
-  projects: { title: "Projects", tile: "linear-gradient(135deg,#38bdf8,#4f46e5)", w: 640, h: 540, x: 0.4, y: 0.1 },
+  projects: { title: "Projects", tile: "linear-gradient(135deg,#38bdf8,#4f46e5)", w: 780, h: 580, x: 0.3, y: 0.06, flush: true },
   controller: {
     title: "Controller Diagnostics",
     tile: "linear-gradient(135deg,#a78bfa,#7c3aed)",

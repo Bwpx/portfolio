@@ -66,9 +66,13 @@ function displayUrl(url) {
 
 const openTab = (url) => window.open(url, "_blank", "noopener,noreferrer");
 
-export default function BrowserApp({ profile }) {
-  const [history, setHistory] = useState({ stack: [GOOGLE_HOME], index: 0 });
-  const [address, setAddress] = useState(() => displayUrl(GOOGLE_HOME));
+// `startUrl` is a page another app asked for; Back from it goes to Google.
+export default function BrowserApp({ profile, startUrl }) {
+  const [history, setHistory] = useState(() => {
+    const stack = startUrl ? [GOOGLE_HOME, frameable(startUrl)] : [GOOGLE_HOME];
+    return { stack, index: stack.length - 1 };
+  });
+  const [address, setAddress] = useState(() => displayUrl(history.stack[history.index]));
   const [reloadKey, setReloadKey] = useState(0);
   const current = history.stack[history.index];
   const bookmarks = bookmarksFor(profile);
@@ -160,6 +164,7 @@ export default function BrowserApp({ profile }) {
         src={current}
         title="Browser page"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+        allow="gamepad"
         referrerPolicy="no-referrer"
       />
     </div>

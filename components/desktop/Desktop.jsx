@@ -100,6 +100,8 @@ export default function Desktop() {
   const [focusRequest, setFocusRequest] = useState({ id: null, n: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState({ name: null, n: 0 });
+  // A page another app asked the Browser to show; `n` restarts the Browser on it.
+  const [browserRequest, setBrowserRequest] = useState({ url: null, n: 0 });
   const [selected, setSelected] = useState(null);
   const [ctx, setCtx] = useState(null); // { x, y, label, items }
   const [drag, setDrag] = useState(null); // { id, from, x, y, target: { zone, index } }
@@ -142,6 +144,12 @@ export default function Desktop() {
     }
     if (id === "settings" && options?.section) {
       setSettingsSection((sec) => ({ name: options.section, n: sec.n + 1 }));
+    }
+    if (id === "browser") {
+      const isOpen = wins.some((w) => w.id === "browser" && w.phase !== "closing");
+      if (options?.url) setBrowserRequest((r) => ({ url: options.url, n: r.n + 1 }));
+      // Opened plainly after being closed: start from the home page again.
+      else if (!isOpen) setBrowserRequest((r) => ({ ...r, url: null }));
     }
     const z = ++zTop.current;
     setWins((ws) => {
@@ -635,6 +643,8 @@ export default function Desktop() {
                 />
               ) : w.id === "settings" ? (
                 <SettingsApp section={settingsSection} onResetDesktop={resetDesktop} />
+              ) : w.id === "browser" ? (
+                <BrowserApp key={browserRequest.n} profile={PROFILE} startUrl={browserRequest.url} />
               ) : (
                 <App profile={PROFILE} openApp={openApp} />
               )}

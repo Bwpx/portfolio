@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Icon } from "./icons";
 import s from "./desktop.module.css";
 
@@ -57,49 +58,109 @@ export function AboutApp({ profile, openApp }) {
   );
 }
 
-export function ProjectsApp({ profile }) {
+// A sidebar of project screenshots and a detail pane for the one picked.
+// Web apps and setup guides open in the desktop's own Browser window.
+export function ProjectsApp({ profile, openApp }) {
+  const [current, setCurrent] = useState(0);
+  const project = profile.projects[current];
+
   return (
-    <>
-      <p className={s.eyebrow}>My Work</p>
-      <h3 style={{ marginBottom: 16 }}>Projects</h3>
-      {profile.projects.map((project) => (
-        <article key={project.title} className={s.project}>
-          <h4>{project.title}</h4>
-          <p>{project.description}</p>
-          <ul className={s.chips} aria-label="Tech stack">
-            {project.tech.map((tech) => (
-              <li key={tech} className={s.chip}>
-                {tech}
+    <div className={s.projects}>
+      <div className={s.projLayout}>
+        <nav className={s.projSide} aria-label="Projects">
+          <p className={s.projSideHead}>
+            Projects <span>{profile.projects.length}</span>
+          </p>
+          <ul className={s.projList}>
+            {profile.projects.map((p, i) => (
+              <li key={p.title}>
+                <button
+                  type="button"
+                  aria-current={i === current || undefined}
+                  onClick={() => setCurrent(i)}
+                >
+                  <span className={s.projThumb}>
+                    {p.image && <Image src={p.image} alt="" fill sizes="190px" />}
+                  </span>
+                  <strong>{p.title}</strong>
+                  <small>{p.kind ?? "Project"}</small>
+                </button>
               </li>
             ))}
           </ul>
-          <div className={s.links}>
-            {project.details && (
-              <a className={`${s.btn} ${s.btnPrimary}`} href={project.details}>
-                <Icon name="doc" />
-                Setup guide
-              </a>
-            )}
-            {project.live && (
-              <ExternalButton href={project.live} icon="external">
-                Live site
-              </ExternalButton>
-            )}
-            {project.download && (
-              <a className={s.btn} href={project.download} download>
-                <Icon name="download" />
-                Download
-              </a>
-            )}
-            {project.github && (
-              <ExternalButton href={project.github} icon="github">
-                GitHub
-              </ExternalButton>
-            )}
-          </div>
-        </article>
-      ))}
-    </>
+          <p className={s.projSoon}>More on the way</p>
+        </nav>
+
+        <ProjectDetail key={project.title} project={project} openApp={openApp} />
+      </div>
+    </div>
+  );
+}
+
+// Laid out like an app store page: name and actions first, then the
+// screenshot and description.
+function ProjectDetail({ project, openApp }) {
+  return (
+    <article className={s.projDetail}>
+      <p className={s.eyebrow}>{project.kind ?? "Project"}</p>
+      <h3>{project.title}</h3>
+      <ul className={s.chips} aria-label="Tech stack">
+        {project.tech.map((tech) => (
+          <li key={tech} className={s.chip}>
+            {tech}
+          </li>
+        ))}
+      </ul>
+      <div className={s.links}>
+        {project.live && (
+          <button
+            type="button"
+            className={`${s.btn} ${s.btnPrimary}`}
+            onClick={() => openApp("browser", { url: project.live })}
+          >
+            <Icon name="browser" />
+            Try it here
+          </button>
+        )}
+        {project.download && (
+          <a
+            className={`${s.btn} ${project.live ? "" : s.btnPrimary}`}
+            href={project.download}
+            download
+          >
+            <Icon name="download" />
+            Download
+          </a>
+        )}
+        {project.details && (
+          <button type="button" className={s.btn} onClick={() => openApp("browser", { url: project.details })}>
+            <Icon name="doc" />
+            Setup guide
+          </button>
+        )}
+        {project.live && (
+          <ExternalButton href={project.live} icon="external">
+            New tab
+          </ExternalButton>
+        )}
+        {project.github && (
+          <ExternalButton href={project.github} icon="github">
+            GitHub
+          </ExternalButton>
+        )}
+      </div>
+      {project.image && (
+        <div className={s.projShot}>
+          <Image
+            src={project.image}
+            alt={`Screenshot of ${project.title}`}
+            fill
+            sizes="(max-width: 720px) 100vw, 560px"
+          />
+        </div>
+      )}
+      <p>{project.description}</p>
+    </article>
   );
 }
 
