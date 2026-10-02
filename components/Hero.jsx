@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import { GitHubIcon, LinkedInIcon } from "./Icons";
+import NeuralNet from "./NeuralNet";
 import { siteData } from "@/data/portfolio";
 
 export default function Hero() {
@@ -8,19 +9,9 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative min-h-screen flex items-center hero-grid overflow-hidden"
+      className="relative min-h-screen flex items-center overflow-hidden bg-[#0a0a0a]"
     >
-      {/* Radial fade over the dot grid */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 90% 70% at 50% 50%, transparent 20%, #0a0a0a 85%)",
-        }}
-      />
-
-      {/* Subtle emerald glow — top right accent */}
-      <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-amber-500 opacity-[0.06] blur-3xl pointer-events-none" />
+      <NeuralNet />
 
       <div className="relative max-w-5xl mx-auto px-6 pt-28 pb-20 w-full anim-fade-up">
         <p className="text-sm text-amber-400 font-medium mb-5 tracking-wide font-mono">
