@@ -4,77 +4,98 @@ import { useState } from "react";
 import { Icon } from "./icons";
 import s from "./desktop.module.css";
 
-const HOME = "home:";
+// Google's embeddable mode (igu=1) is the one Google page that may be shown
+// inside a frame, so it doubles as the home page and the search engine.
+const GOOGLE_HOME = "https://www.google.com/webhp?igu=1";
+const googleSearch = (q) => `https://www.google.com/search?igu=1&q=${encodeURIComponent(q)}`;
 
 // Pages that refuse to load inside a frame open in a new tab instead.
-const FRAME_BLOCKED = /(^|\.)(github\.com|linkedin\.com|google\.com|duckduckgo\.com)$/i;
+const FRAME_BLOCKED = /(^|\.)(github\.com|linkedin\.com|duckduckgo\.com)$/i;
 
 function bookmarksFor(profile) {
   const marks = [
-    { label: "Portfolio", url: profile.homepage, note: "The classic one-page site" },
+    { label: "Google", url: GOOGLE_HOME },
+    { label: "Portfolio", url: profile.homepage },
     ...profile.projects.flatMap((p) => [
-      p.details && { label: p.title, url: p.details, note: "Setup guide" },
-      p.live && { label: p.title, url: p.live, note: "Live site" },
+      p.details && { label: p.title, url: p.details },
+      p.live && { label: p.title, url: p.live },
     ]),
-    { label: "GitHub", url: profile.github.url, note: "Opens in a new tab" },
-    { label: "LinkedIn", url: profile.linkedin.url, note: "Opens in a new tab" },
+    { label: "GitHub", url: profile.github.url },
+    { label: "LinkedIn", url: profile.linkedin.url },
   ];
   return marks.filter(Boolean);
 }
 
-// Turn what was typed into a URL, or null for a search.
+// Turn what was typed into a URL; anything else becomes a Google search.
 function toUrl(input) {
   const text = input.trim();
-  if (!text) return null;
   if (text.startsWith("/")) return text;
   if (/^https?:\/\//i.test(text)) return text;
   if (!/\s/.test(text) && /\.[a-z]{2,}(\/|$)/i.test(text)) return `https://${text}`;
-  return null;
+  return googleSearch(text);
+}
+
+function parse(url) {
+  try {
+    return new URL(url, window.location.href);
+  } catch {
+    return null;
+  }
+}
+
+// Plain google.com pages are blocked in frames; their embeddable twin isn't.
+function frameable(url) {
+  const u = parse(url);
+  if (!u || !/(^|\.)google\.com$/i.test(u.hostname) || u.searchParams.has("igu")) return url;
+  u.searchParams.set("igu", "1");
+  return u.href;
 }
 
 function blocksFraming(url) {
-  try {
-    return FRAME_BLOCKED.test(new URL(url, window.location.href).hostname);
-  } catch {
-    return false;
-  }
+  const u = parse(url);
+  return Boolean(u && FRAME_BLOCKED.test(u.hostname));
+}
+
+// What the address bar shows: the URL without the embedding flag.
+function displayUrl(url) {
+  const u = parse(url);
+  if (!u || !u.searchParams.has("igu")) return url;
+  u.searchParams.delete("igu");
+  return u.pathname === "/webhp" && !u.search ? "google.com" : u.href;
 }
 
 const openTab = (url) => window.open(url, "_blank", "noopener,noreferrer");
 
 export default function BrowserApp({ profile }) {
-  const [history, setHistory] = useState({ stack: [HOME], index: 0 });
-  const [address, setAddress] = useState("");
+  const [history, setHistory] = useState({ stack: [GOOGLE_HOME], index: 0 });
+  const [address, setAddress] = useState(() => displayUrl(GOOGLE_HOME));
   const [reloadKey, setReloadKey] = useState(0);
   const current = history.stack[history.index];
   const bookmarks = bookmarksFor(profile);
 
-  function show(url) {
+  function navigate(target) {
+    const url = frameable(target);
+    if (blocksFraming(url)) {
+      openTab(url);
+      return;
+    }
     setHistory((h) => {
       const stack = [...h.stack.slice(0, h.index + 1), url];
       return { stack, index: stack.length - 1 };
     });
-    setAddress(url === HOME ? "" : url);
-  }
-
-  function navigate(url) {
-    if (url !== HOME && blocksFraming(url)) openTab(url);
-    else show(url);
+    setAddress(displayUrl(url));
   }
 
   function go(delta) {
     const index = history.index + delta;
     if (index < 0 || index >= history.stack.length) return;
     setHistory((h) => ({ ...h, index }));
-    const url = history.stack[index];
-    setAddress(url === HOME ? "" : url);
+    setAddress(displayUrl(history.stack[index]));
   }
 
   function submit(e) {
     e.preventDefault();
-    const url = toUrl(address);
-    if (url) navigate(url);
-    else if (address.trim()) openTab(`https://duckduckgo.com/?q=${encodeURIComponent(address.trim())}`);
+    if (address.trim()) navigate(toUrl(address));
   }
 
   return (
@@ -95,7 +116,7 @@ export default function BrowserApp({ profile }) {
         <button type="button" className={s.iconBtn} aria-label="Reload" onClick={() => setReloadKey((k) => k + 1)}>
           <Icon name="reload" />
         </button>
-        <button type="button" className={s.iconBtn} aria-label="Start page" onClick={() => navigate(HOME)}>
+        <button type="button" className={s.iconBtn} aria-label="Home" onClick={() => navigate(GOOGLE_HOME)}>
           <Icon name="home" />
         </button>
         <input
@@ -103,7 +124,7 @@ export default function BrowserApp({ profile }) {
           type="text"
           inputMode="url"
           value={address}
-          placeholder="Search or enter address"
+          placeholder="Search Google or type a URL"
           aria-label="Address"
           onChange={(e) => setAddress(e.target.value)}
           onFocus={(e) => e.target.select()}
@@ -116,47 +137,31 @@ export default function BrowserApp({ profile }) {
           type="button"
           className={s.iconBtn}
           aria-label="Open in new tab"
-          disabled={current === HOME}
-          onClick={() => openTab(current)}
+          onClick={() => openTab(displayUrl(current))}
         >
           <Icon name="external" />
         </button>
       </form>
 
-      {current === HOME ? (
-        <div className={s.startPage}>
-          <p className={s.eyebrow}>Start page</p>
-          <h3>Where to?</h3>
-          <ul className={s.bookmarks}>
-            {bookmarks.map((mark) => (
-              <li key={mark.url}>
-                <button type="button" onClick={() => navigate(mark.url)}>
-                  <span className={s.favicon} aria-hidden="true">
-                    {mark.label[0]}
-                  </span>
-                  <span>
-                    <strong>{mark.label}</strong>
-                    <small>{mark.note}</small>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className={s.browserHint}>
-            Searches open DuckDuckGo in a new tab. Some sites don&apos;t allow being shown inside
-            another page; use the ↗ button to open the current page in a real tab.
-          </p>
-        </div>
-      ) : (
-        <iframe
-          key={`${history.index}-${reloadKey}`}
-          className={s.browserFrame}
-          src={current}
-          title="Browser page"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
-          referrerPolicy="no-referrer"
-        />
-      )}
+      <nav className={s.bookmarkBar} aria-label="Bookmarks">
+        {bookmarks.map((mark) => (
+          <button key={mark.url} type="button" onClick={() => navigate(mark.url)} title={displayUrl(mark.url)}>
+            <span className={s.favicon} aria-hidden="true">
+              {mark.label[0]}
+            </span>
+            {mark.label}
+          </button>
+        ))}
+      </nav>
+
+      <iframe
+        key={`${history.index}-${reloadKey}`}
+        className={s.browserFrame}
+        src={current}
+        title="Browser page"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+        referrerPolicy="no-referrer"
+      />
     </div>
   );
 }
