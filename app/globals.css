@@ -58,3 +58,14 @@ body {
 .anim-fade-in {
   animation: fadeIn 1.2s 0.3s ease both;
 }
+
+/* Project billboard: cross-fade when another project is picked. */
+.anim-billboard {
+  animation: fadeIn 0.45s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-billboard {
+    animation: none;
+  }
+}

@@ -42,6 +42,8 @@ export const siteData = {
       download:
         "https://github.com/bwpx/fpsopti-ai/releases/latest/download/FPSOptiAI.exe",
       details: "/fpsopti-ai/",
+      image: "/projects/fpsopti-ai.jpg",
+      kind: "Windows app",
     },
     {
       title: "Controller Diagnostics Web App",
@@ -50,6 +52,8 @@ export const siteData = {
       tech: ["JavaScript", "React", "Vercel"],
       github: "https://github.com/bwpx",
       live: "https://controller-diagnostics.vercel.app",
+      image: "/projects/controller-diagnostics.jpg",
+      kind: "Web app",
     },
     // {
     //   title: "Your Next Project",
@@ -57,6 +61,8 @@ export const siteData = {
     //   tech: ["Next.js", "TypeScript"],
     //   github: "",
     //   live: "",
+    //   image: "/projects/your-project.jpg", // 16:9 screenshot for the slider
+    //   kind: "Web app",
     // },
   ],
 
