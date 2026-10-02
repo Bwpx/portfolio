@@ -13,7 +13,7 @@ const FADE_MS = 600;
 // the inline settings script sets before first paint when startup is enabled.
 // It stays up until the wallpaper has loaded (within limits), and any click
 // or key press skips it.
-export default function StartupScreen({ name }) {
+export default function StartupScreen({ name, handle }) {
   useEffect(() => {
     const root = document.querySelector("[data-desk-root]");
     let timers = [];
@@ -81,7 +81,8 @@ export default function StartupScreen({ name }) {
     <div className={s.boot}>
       <div className={s.bootInner} aria-hidden="true">
         <div className={s.bootMark}>
-          <span>{"<"}</span>mg<span>{"/>"}</span>
+          {handle}<span>@</span>portfolio<span>:~$</span>
+          <i className={s.bootCursor} />
         </div>
         <p className={s.bootName}>{name}</p>
         <div className={s.bootBar}>

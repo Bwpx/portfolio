@@ -38,12 +38,11 @@ export default function FPSOptiAIPage() {
           </Link>
           <a
             href="#"
-            className="font-mono text-base font-semibold text-[#e4e4e7] hover:text-amber-400 transition-colors"
+            className="font-mono text-sm sm:text-base font-semibold text-[#e4e4e7] hover:text-amber-400 transition-colors"
             aria-label="Top of page"
           >
-            <span className="text-amber-500">{"<"}</span>
-            mg
-            <span className="text-amber-500">{" />"}</span>
+            martin<span className="text-amber-500">@</span>portfolio
+            <span className="text-amber-500">:~$</span>
           </a>
         </div>
       </div>

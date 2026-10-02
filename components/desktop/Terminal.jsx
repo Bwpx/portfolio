@@ -18,7 +18,7 @@ const extLink = (href, text) => (
 );
 
 export default function Terminal({ profile, openable, openApp, theme, setTheme, onExit }) {
-  const prompt = `${profile.handle}@portfolio ~ $`;
+  const prompt = `${profile.handle}@portfolio:~$`;
   const inputId = useId();
   const inputRef = useRef(null);
   const nextLineId = useRef(3);

@@ -25,15 +25,14 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-16">
-        {/* Logo — code-bracket monogram */}
+        {/* Logo — terminal prompt, matching the desktop Terminal */}
         <a
           href="#"
-          className="font-mono text-base font-semibold text-[#e4e4e7] hover:text-amber-400 transition-colors duration-200"
+          className="font-mono text-sm sm:text-base font-semibold text-[#e4e4e7] hover:text-amber-400 transition-colors duration-200"
           aria-label="Home"
         >
-          <span className="text-amber-500">{"<"}</span>
-          mg
-          <span className="text-amber-500">{" />"}</span>
+          martin<span className="text-amber-500">@</span>portfolio
+          <span className="text-amber-500">:~$</span>
         </a>
 
         {/* Desktop links */}

@@ -484,7 +484,7 @@ export default function Desktop() {
             }
           }}
         >
-          <span>{"<"}</span>mg<span>{" />"}</span>
+          {PROFILE.handle}<span>@</span>portfolio<span>:~$</span>
         </button>
         <span className={s.activeApp} aria-live="polite">
           {front ? APPS[front.id].title : "Desktop"}
@@ -687,7 +687,7 @@ export default function Desktop() {
         {drag ? `Moving ${APPS[drag.id].title} to the ${drag.target.zone}` : ""}
       </span>
 
-      <StartupScreen name={PROFILE.name} />
+      <StartupScreen name={PROFILE.name} handle={PROFILE.handle} />
     </div>
   );
 }
