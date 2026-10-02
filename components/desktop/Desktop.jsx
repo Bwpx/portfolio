@@ -132,6 +132,10 @@ export default function Desktop() {
   function openApp(id, options) {
     const app = APPS[id];
     if (!app) return;
+    if (app.external) {
+      window.open(app.href, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (app.href) {
       router.push(app.href);
       return;
@@ -279,7 +283,7 @@ export default function Desktop() {
     const inDock = st.dock.includes(id);
     const running = wins.some((w) => w.id === id && w.phase !== "closing");
     showContextMenu(e, `${app.title} options`, [
-      { label: app.href ? "Open Classic View" : "Open", action: () => openApp(id) },
+      { label: app.external ? "Open in New Tab" : app.href ? "Open Classic View" : "Open", action: () => openApp(id) },
       ...(running ? [{ label: "Close Window", action: () => closeWin(id) }] : []),
       "sep",
       {
@@ -580,7 +584,7 @@ export default function Desktop() {
                   <button
                     type="button"
                     className={cx(s.deskIcon, selected === id && s.isSelected)}
-                    aria-label={`${APPS[id].title}${APPS[id].href ? " (opens the classic site)" : ""}`}
+                    aria-label={`${APPS[id].title}${APPS[id].hint ? ` (${APPS[id].hint})` : ""}`}
                     onPointerDown={(e) => {
                       lastPointerTouch.current = e.pointerType === "touch";
                       setSelected(id);
@@ -659,7 +663,7 @@ export default function Desktop() {
               type="button"
               className={cx(s.dockItem, w && s.isRunning)}
               data-dock-id={id}
-              aria-label={app.title + status}
+              aria-label={app.title + (app.hint ? ` (${app.hint})` : "") + status}
               onPointerDown={(e) => startDrag(e, id, "dock")}
               onClick={() => !suppressClick.current && openApp(id)}
               onContextMenu={(e) => iconMenu(e, id)}

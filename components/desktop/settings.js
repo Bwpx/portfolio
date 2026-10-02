@@ -21,7 +21,15 @@ export const DEFAULT_SETTINGS = {
   desktop: DEFAULT_DESKTOP,
   dock: DEFAULT_DOCK,
   startup: true,
+  seen: APP_IDS,
 };
+
+// Apps that existed before `seen` was saved. Anything newer gets added to a
+// returning visitor's saved layout once, so new apps show up for them too.
+const ORIGINAL_APPS = [
+  "about", "projects", "resume", "skills", "contact", "browser",
+  "terminal", "notes", "calculator", "settings", "classic",
+];
 
 export const SETTINGS_SCRIPT = `(function(){var s={};try{s=JSON.parse(localStorage.getItem(${JSON.stringify(
   STORAGE_KEY
@@ -44,12 +52,28 @@ function load() {
   } catch {
     // Missing or unreadable storage: fall back to defaults.
   }
+  const seen = isList(saved.seen) ? saved.seen : ORIGINAL_APPS;
+  const fresh = APP_IDS.filter((id) => !seen.includes(id));
   return {
     wallpaper: WALLPAPERS.some((w) => w.id === saved.wallpaper) ? saved.wallpaper : DEFAULT_WALLPAPER,
-    desktop: isList(saved.desktop) ? cleanList(saved.desktop) : DEFAULT_DESKTOP,
-    dock: isList(saved.dock) ? cleanList(saved.dock) : DEFAULT_DOCK,
+    desktop: isList(saved.desktop) ? addNew(cleanList(saved.desktop), DEFAULT_DESKTOP, fresh) : DEFAULT_DESKTOP,
+    dock: isList(saved.dock) ? addNew(cleanList(saved.dock), DEFAULT_DOCK, fresh) : DEFAULT_DOCK,
     startup: saved.startup !== false,
+    seen: APP_IDS,
   };
+}
+
+// Insert each new app that belongs in `defaults` right after the app that
+// precedes it there (or at the start), keeping the visitor's own order.
+function addNew(list, defaults, fresh) {
+  const out = [...list];
+  for (const id of fresh) {
+    const at = defaults.indexOf(id);
+    if (at < 0 || out.includes(id)) continue;
+    const before = defaults.slice(0, at).reverse().find((x) => out.includes(x));
+    out.splice(before ? out.indexOf(before) + 1 : 0, 0, id);
+  }
+  return out;
 }
 
 function getSnapshot() {

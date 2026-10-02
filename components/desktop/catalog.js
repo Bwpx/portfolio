@@ -2,10 +2,18 @@
 // Kept free of components so any file can import it without cycles.
 
 // w/h: preferred window size; x/y: preferred position as a fraction of the screen.
-// Apps without a size (classic) don't open a window.
+// Apps with an href (classic, controller) open a page instead of a window;
+// `external` ones open in a new tab. `hint` is read out by screen readers.
 export const APP_META = {
   about: { title: "About Me", tile: "linear-gradient(135deg,#f59e0b,#ea580c)", w: 560, h: 600, x: 0.1, y: 0.06 },
   projects: { title: "Projects", tile: "linear-gradient(135deg,#38bdf8,#4f46e5)", w: 640, h: 540, x: 0.4, y: 0.1 },
+  controller: {
+    title: "Controller Diagnostics",
+    tile: "linear-gradient(135deg,#a78bfa,#7c3aed)",
+    href: "https://controller-diagnostics.vercel.app",
+    external: true,
+    hint: "opens in a new tab",
+  },
   resume: { title: "Resume", tile: "linear-gradient(135deg,#e2e8f0,#94a3b8)", w: 660, h: 640, x: 0.24, y: 0.04 },
   skills: { title: "Skills", tile: "linear-gradient(135deg,#34d399,#0d9488)", w: 480, h: 400, x: 0.18, y: 0.3 },
   contact: { title: "Contact", tile: "linear-gradient(135deg,#fb7185,#db2777)", w: 460, h: 420, x: 0.56, y: 0.26 },
@@ -14,15 +22,21 @@ export const APP_META = {
   notes: { title: "Notes", tile: "linear-gradient(135deg,#fde047,#f59e0b)", w: 640, h: 440, x: 0.44, y: 0.2, flush: true },
   calculator: { title: "Calculator", tile: "linear-gradient(135deg,#a1a1aa,#52525b)", w: 300, h: 460, x: 0.66, y: 0.12, flush: true },
   settings: { title: "Settings", tile: "linear-gradient(135deg,#94a3b8,#475569)", w: 640, h: 660, x: 0.3, y: 0.03, flush: true },
-  classic: { title: "Classic View", tile: "linear-gradient(135deg,#71717a,#3f3f46)", href: "/" },
+  classic: {
+    title: "Classic View",
+    tile: "linear-gradient(135deg,#71717a,#3f3f46)",
+    href: "/",
+    hint: "opens the classic site",
+  },
 };
 
 export const APP_IDS = Object.keys(APP_META);
 
-export const DEFAULT_DESKTOP = ["about", "projects", "resume", "contact", "classic"];
+export const DEFAULT_DESKTOP = ["about", "projects", "controller", "resume", "contact", "classic"];
 export const DEFAULT_DOCK = [
   "about",
   "projects",
+  "controller",
   "skills",
   "contact",
   "browser",
