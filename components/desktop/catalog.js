@@ -94,6 +94,14 @@ export const WALLPAPERS = [
     source: "https://commons.wikimedia.org/wiki/File:21-224-5054_NNP_Synevyr_RB_18.jpg",
   },
   {
+    id: "cherry-blossoms",
+    name: "Cherry Blossoms",
+    kind: "Spring",
+    author: "掬茶",
+    license: "CC BY-SA 4.0",
+    source: "https://commons.wikimedia.org/wiki/File:Rail_tracks_and_cherry_trees_in_Ashino_Park.jpg",
+  },
+  {
     id: "still-lake",
     name: "Still Lake",
     kind: "Lake",
