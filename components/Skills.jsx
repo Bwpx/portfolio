@@ -1,16 +1,41 @@
 import { siteData } from "@/data/portfolio";
 import SectionHeading from "./SectionHeading";
+import SkillTile from "./SkillTile";
+
+// Titles of the projects whose `tech` lists this skill.
+const projectsUsing = (skill) =>
+  siteData.projects.filter((p) => p.tech.includes(skill)).map((p) => p.title);
 
 export default function Skills() {
+  const levels = Object.entries(siteData.skillLevels);
+
   return (
     <section id="skills" className="py-24 sm:py-28 bg-[#111113]">
       <div className="max-w-5xl mx-auto px-6">
-        <SectionHeading eyebrow="Tech Stack" title="Skills" />
+        <SectionHeading
+          eyebrow="Tech Stack"
+          title="Skills"
+          intro="Grouped by how much I actually use them. Skills with a project under them link to where I used them."
+        />
 
-        {/* Groups — edit categories and items in data/portfolio.js */}
-        <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
-          {Object.entries(siteData.skills).map(([category, items]) => (
-            <SkillGroup key={category} category={category} items={items} />
+        {/* Edit skills and their levels in data/portfolio.js */}
+        <div className="space-y-10">
+          {levels.map(([id, title], i) => (
+            <div key={id}>
+              <h3 className="flex items-center gap-3 mb-4 text-[11px] font-semibold text-amber-400 uppercase tracking-[0.2em] font-mono">
+                <SignalBars filled={levels.length - i} total={levels.length} />
+                {title}
+              </h3>
+              <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                {siteData.skills
+                  .filter((skill) => skill.level === id)
+                  .map((skill) => (
+                    <li key={skill.name}>
+                      <SkillTile name={skill.name} projects={projectsUsing(skill.name)} />
+                    </li>
+                  ))}
+              </ul>
+            </div>
           ))}
         </div>
       </div>
@@ -18,22 +43,17 @@ export default function Skills() {
   );
 }
 
-function SkillGroup({ category, items }) {
+// Three bars like a signal meter: more filled bars, more use.
+function SignalBars({ filled, total }) {
   return (
-    <div className="rounded-xl border border-[#27272a] bg-[#18181b] p-6 hover:border-amber-500/30 transition-colors duration-300">
-      <h3 className="text-[11px] font-semibold text-amber-400 uppercase tracking-[0.2em] mb-5 font-mono">
-        {category}
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {items.map((skill) => (
-          <span
-            key={skill}
-            className="text-sm text-[#a1a1aa] bg-[#27272a] border border-[#3f3f46] px-3 py-1.5 rounded-lg hover:border-amber-500/40 hover:text-[#e4e4e7] transition-all duration-200 cursor-default"
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
-    </div>
+    <span className="flex h-3.5 items-end gap-[3px]" aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={`w-[3px] rounded-sm ${i < filled ? "bg-amber-500" : "bg-[#3f3f46]"}`}
+          style={{ height: `${((i + 1) / total) * 100}%` }}
+        />
+      ))}
+    </span>
   );
 }

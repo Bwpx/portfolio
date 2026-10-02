@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Download, ExternalLink, Info, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, Info, Plus, X } from "lucide-react";
 import { GitHubIcon } from "./Icons";
+import { SHOW_SKILL_EVENT } from "./projectEvents";
 
 // Streaming-service style projects: a large "billboard" for the selected
 // project, and a sliding row of tiles below it to pick from.
@@ -15,33 +17,84 @@ const GUTTER = "max(1.5rem, calc((100vw - 64rem) / 2 + 1.5rem))";
 
 export default function ProjectSlider({ projects }) {
   const [selected, setSelected] = useState(0);
+  // A skill picked in the Skills section; projects without it are dimmed.
+  const [spotlight, setSpotlight] = useState(null);
   const billboardRef = useRef(null);
   const project = projects[selected];
+  const usesSpotlight = (p) => !spotlight || p.tech.includes(spotlight);
 
   function choose(index) {
     setSelected(index);
+    if (!usesSpotlight(projects[index])) setSpotlight(null);
     // On small screens the billboard may be scrolled away; bring it back.
     const box = billboardRef.current.getBoundingClientRect();
-    if (box.top < 0) billboardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (box.top < 0) billboardRef.current.scrollIntoView({ block: "start" });
   }
+
+  useEffect(() => {
+    function onShowSkill(event) {
+      const skill = event.detail;
+      const index = projects.findIndex((p) => p.tech.includes(skill));
+      if (index < 0) return;
+      // Render the new billboard first so focus lands on what's on screen.
+      flushSync(() => {
+        setSelected(index);
+        setSpotlight(skill);
+      });
+      billboardRef.current.scrollIntoView({ block: "start" });
+      billboardRef.current.focus({ preventScroll: true });
+    }
+    window.addEventListener(SHOW_SKILL_EVENT, onShowSkill);
+    return () => window.removeEventListener(SHOW_SKILL_EVENT, onShowSkill);
+  }, [projects]);
+
+  const filter = spotlight && (
+    <span className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 py-0.5 pl-3 pr-1 text-xs text-amber-300">
+      Using {spotlight}
+      <button
+        type="button"
+        onClick={() => setSpotlight(null)}
+        aria-label="Show all projects"
+        className="grid h-5 w-5 place-items-center rounded-full hover:bg-amber-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+      >
+        <X size={12} strokeWidth={2.5} />
+      </button>
+    </span>
+  );
 
   return (
     <>
-      <div className="max-w-5xl mx-auto px-6 scroll-mt-24" ref={billboardRef}>
-        <Billboard key={selected} project={project} />
+      <div
+        ref={billboardRef}
+        tabIndex={-1}
+        aria-label="Selected project"
+        role="region"
+        className="max-w-5xl mx-auto px-6 scroll-mt-24 outline-none"
+      >
+        <Billboard key={selected} project={project} highlight={spotlight} />
       </div>
 
-      <Row title="My Projects">
+      <p role="status" className="sr-only">
+        {spotlight ? `Showing projects that use ${spotlight}` : ""}
+      </p>
+
+      <Row title="My Projects" filter={filter}>
         {projects.map((p, i) => (
-          <Tile key={p.title} project={p} active={i === selected} onSelect={() => choose(i)} />
+          <Tile
+            key={p.title}
+            project={p}
+            active={i === selected}
+            dimmed={!usesSpotlight(p)}
+            onSelect={() => choose(i)}
+          />
         ))}
-        <ComingSoonTile />
+        <ComingSoonTile dimmed={Boolean(spotlight)} />
       </Row>
     </>
   );
 }
 
-function Billboard({ project }) {
+function Billboard({ project, highlight }) {
   const primary = project.live
     ? { label: "Open live site", href: project.live, icon: ExternalLink, external: true }
     : project.download
@@ -84,7 +137,9 @@ function Billboard({ project }) {
           {project.tech.map((t, i) => (
             <span key={t} className="flex items-center gap-2">
               {i > 0 && <span className="text-[#52525b]">•</span>}
-              {t}
+              <span className={t === highlight ? "rounded bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-300" : undefined}>
+                {t}
+              </span>
             </span>
           ))}
         </p>
@@ -130,7 +185,7 @@ function Billboard({ project }) {
   );
 }
 
-function Row({ title, children }) {
+function Row({ title, filter, children }) {
   const scrollerRef = useRef(null);
   const [state, setState] = useState({ page: 0, pages: 1, atStart: true, atEnd: true });
 
@@ -165,7 +220,10 @@ function Row({ title, children }) {
   return (
     <div className="mt-12">
       <div className="max-w-5xl mx-auto px-6 mb-3 flex items-end justify-between">
-        <h3 className="text-lg font-bold text-[#e4e4e7]">{title}</h3>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h3 className="text-lg font-bold text-[#e4e4e7]">{title}</h3>
+          {filter}
+        </div>
         {state.pages > 1 && (
           <div className="flex gap-1" aria-hidden="true">
             {Array.from({ length: state.pages }, (_, i) => (
@@ -213,9 +271,9 @@ function Row({ title, children }) {
 
 const TILE = "snap-start shrink-0 w-[78vw] sm:w-[calc((min(100vw,64rem)-3rem-1.5rem)/3)]";
 
-function Tile({ project, active, onSelect }) {
+function Tile({ project, active, dimmed, onSelect }) {
   return (
-    <li className={TILE}>
+    <li className={`${TILE} transition-[opacity,filter] duration-300 ${dimmed ? "opacity-35 grayscale hover:opacity-100 hover:grayscale-0" : ""}`}>
       <button
         type="button"
         onClick={onSelect}
@@ -251,9 +309,9 @@ function Tile({ project, active, onSelect }) {
   );
 }
 
-function ComingSoonTile() {
+function ComingSoonTile({ dimmed }) {
   return (
-    <li className={TILE}>
+    <li className={`${TILE} transition-opacity duration-300 ${dimmed ? "opacity-35" : ""}`}>
       <div className="relative flex w-full aspect-video flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#3f3f46] bg-[#111113] text-center">
         <span className="grid h-10 w-10 place-items-center rounded-full border border-[#3f3f46] text-[#71717a]">
           <Plus size={18} />

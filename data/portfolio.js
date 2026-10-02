@@ -66,12 +66,37 @@ export const siteData = {
     // },
   ],
 
-  // ─── Add or remove skills per category ───────────────────────────────────
-  skills: {
-    Languages: ["Java", "Python", "C", "JavaScript", "SQL"],
-    "Frameworks & Libraries": ["React", "Node.js"],
-    Tools: ["Git", "GitHub", "VS Code", "Eclipse", "Azure", "Vercel", "MySQL", "Slack"],
+  // ─── Skills ──────────────────────────────────────────────────────────────
+  // `level` picks the group on the main page (named in skillLevels below);
+  // `category` groups them on the resume and the desktop. A skill whose name
+  // matches a project's `tech` entry links to that project automatically.
+  skillLevels: {
+    daily: "Use all the time",
+    comfortable: "Comfortable with",
+    learning: "Learning now",
   },
+  skills: [
+    { name: "Java", category: "Languages", level: "daily" },
+    { name: "Python", category: "Languages", level: "daily" },
+    { name: "C", category: "Languages", level: "comfortable" },
+    { name: "JavaScript", category: "Languages", level: "daily" },
+    { name: "SQL", category: "Languages", level: "comfortable" },
+    { name: "React", category: "Frameworks & Libraries", level: "comfortable" },
+    { name: "Node.js", category: "Frameworks & Libraries", level: "comfortable" },
+    { name: "CustomTkinter", category: "Frameworks & Libraries", level: "comfortable" },
+    { name: "Next.js", category: "Frameworks & Libraries", level: "learning" },
+    { name: "Tailwind CSS", category: "Frameworks & Libraries", level: "learning" },
+    { name: "Git", category: "Tools", level: "daily" },
+    { name: "GitHub", category: "Tools", level: "daily" },
+    { name: "VS Code", category: "Tools", level: "daily" },
+    { name: "Eclipse", category: "Tools", level: "comfortable" },
+    { name: "Azure", category: "Tools", level: "comfortable" },
+    { name: "Vercel", category: "Tools", level: "comfortable" },
+    { name: "MySQL", category: "Tools", level: "comfortable" },
+    { name: "Slack", category: "Tools", level: "comfortable" },
+    { name: "PyInstaller", category: "Tools", level: "comfortable" },
+    { name: "Ollama", category: "Tools", level: "learning" },
+  ],
 
   contact: {
     intro:

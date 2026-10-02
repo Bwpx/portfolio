@@ -15,7 +15,7 @@ export const APP_META = {
     hint: "opens in a new tab",
   },
   resume: { title: "Resume", tile: "linear-gradient(135deg,#e2e8f0,#94a3b8)", w: 660, h: 640, x: 0.24, y: 0.04 },
-  skills: { title: "Skills", tile: "linear-gradient(135deg,#34d399,#0d9488)", w: 480, h: 400, x: 0.18, y: 0.3 },
+  skills: { title: "Skills", tile: "linear-gradient(135deg,#34d399,#0d9488)", w: 480, h: 470, x: 0.18, y: 0.26 },
   contact: { title: "Contact", tile: "linear-gradient(135deg,#fb7185,#db2777)", w: 460, h: 420, x: 0.56, y: 0.26 },
   browser: { title: "Browser", tile: "linear-gradient(135deg,#60a5fa,#0891b2)", w: 900, h: 600, x: 0.16, y: 0.05, flush: true },
   terminal: { title: "Terminal", tile: "linear-gradient(135deg,#3f3f46,#18181b)", w: 620, h: 400, x: 0.32, y: 0.38 },

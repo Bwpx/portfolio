@@ -3,6 +3,10 @@ import { siteData } from "@/data/portfolio";
 // Desktop content is derived from data/portfolio.js — edit that file, not this one.
 const { name, hero, about, projects, skills, contact } = siteData;
 
+// The desktop and the resume list skills by category: { Languages: [...], ... }.
+const skillsByCategory = {};
+for (const skill of skills) (skillsByCategory[skill.category] ??= []).push(skill.name);
+
 export const PROFILE = {
   name,
   initials: name
@@ -21,6 +25,6 @@ export const PROFILE = {
   github: contact.github,
   linkedin: contact.linkedin,
   projects,
-  skills,
+  skills: skillsByCategory,
   homepage: "/",
 };

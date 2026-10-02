@@ -1,4 +1,4 @@
-export default function SectionHeading({ eyebrow, title }) {
+export default function SectionHeading({ eyebrow, title, intro }) {
   return (
     <div className="mb-12 sm:mb-14">
       {eyebrow && (
@@ -10,6 +10,7 @@ export default function SectionHeading({ eyebrow, title }) {
         {title}
       </h2>
       <div className="mt-4 h-[3px] w-12 bg-amber-500 rounded-full" />
+      {intro && <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#a1a1aa]">{intro}</p>}
     </div>
   );
 }
